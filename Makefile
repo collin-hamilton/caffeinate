@@ -21,6 +21,7 @@ build:
 		-target "$(ARCH)-apple-macosx$(DEPLOYMENT_TARGET)" \
 		-framework AppKit \
 		-framework IOKit \
+		-framework ServiceManagement \
 		Sources/caffinate/main.swift \
 		Sources/caffinate/AppDelegate.swift \
 		-o "$(EXECUTABLE)"

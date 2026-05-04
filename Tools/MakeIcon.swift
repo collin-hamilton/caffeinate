@@ -36,6 +36,8 @@ try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectori
 
 for icon in icons {
     let pixelSize = NSSize(width: icon.size, height: icon.size)
+    let drawRect = NSRect(origin: .zero, size: pixelSize)
+    let cornerRadius = CGFloat(icon.size) * 0.22
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
         pixelsWide: icon.size,
@@ -56,9 +58,12 @@ for icon in icons {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     NSColor.clear.setFill()
-    NSRect(origin: .zero, size: pixelSize).fill()
+    drawRect.fill()
+
+    let clipPath = NSBezierPath(roundedRect: drawRect, xRadius: cornerRadius, yRadius: cornerRadius)
+    clipPath.addClip()
     source.draw(
-        in: NSRect(origin: .zero, size: pixelSize),
+        in: drawRect,
         from: .zero,
         operation: .sourceOver,
         fraction: 1.0

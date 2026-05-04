@@ -1,29 +1,38 @@
 # caffinate
 
-caffinate is a tiny native macOS menu-bar app. It appears only in the top menu bar while running, does not appear in the Dock, and provides a minimal switch UI for a macOS power assertion.
+caffinate is a tiny native macos menu-bar app. it appears only in the top menu bar while running, does not appear in the dock, and provides a colorful switch ui for a macos power assertion.
 
-## Build
+## features
+
+- animated keep-awake toggle with different on/off colors.
+- timer presets: until turned off, 15 minutes, 30 minutes, or 1 hour.
+- optional launch at login.
+- menu-bar state icon that changes color when active.
+- power usage settings: turn off when unplugged, or auto-disable below a selected battery percentage.
+- about/status panel with current timer, battery, and sleep-state details.
+
+## build
 
 ```sh
 make build
 ```
 
-The app bundle is created at:
+the app bundle is created at:
 
 ```text
 build/caffinate.app
 ```
 
-## Run
+## run
 
 ```sh
 make run
 ```
 
-Click the moon/sun icon in the menu bar, then use the **Keep awake** switch or quit the app.
+click the coffee icon in the menu bar, then use the **keep awake** switch, timer menu, battery options, or quit the app.
 
-## Important macOS Limitation
+## important macos limitation
 
-This app uses Apple's public `IOPMAssertion` API to prevent idle system sleep and idle display sleep while the toggle is on. Apple's SDK documents that this kind of assertion may still allow sleep for lid close, low battery, Apple menu sleep, and other non-idle sleep reasons.
+this app uses apple's public `iopmassertion` api to prevent idle system sleep and idle display sleep while the toggle is on. apple's sdk documents that this kind of assertion may still allow sleep for lid close, low battery, apple menu sleep, and other non-idle sleep reasons.
 
-That means this is a clean menu-bar app with no Dock icon, but it cannot honestly guarantee closed-lid operation on every Mac using only public macOS APIs.
+that means this is a clean menu-bar app with no dock icon, but it cannot honestly guarantee closed-lid operation on every mac using only public macos apis.
