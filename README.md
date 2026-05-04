@@ -8,7 +8,7 @@ caffinate is a tiny native macos menu-bar app. it appears only in the top menu b
 - timer presets: until turned off, 15 minutes, 30 minutes, or 1 hour.
 - optional launch at login.
 - menu-bar state icon that changes color when active.
-- power usage settings: turn off when unplugged, or auto-disable below a selected battery percentage.
+- power usage settings: turn off when unplugged, or auto disable below a selected battery percentage.
 - about/status panel with current timer, battery, and sleep-state details.
 
 ## build

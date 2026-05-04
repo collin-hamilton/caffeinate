@@ -23,7 +23,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var expirationDate: Date?
     private var countdownTimer: Timer?
     private var batteryTimer: Timer?
+    private var powerSourceRunLoopSource: CFRunLoopSource?
     private var lastBatteryPowered: Bool?
+
+    private static let powerSourceCallback: IOPowerSourceCallbackType = { context in
+        guard let context else { return }
+        let appDelegate = Unmanaged<AppDelegate>.fromOpaque(context).takeUnretainedValue()
+
+        DispatchQueue.main.async {
+            appDelegate.handlePowerSourceChanged()
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -35,6 +45,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         countdownTimer?.invalidate()
         batteryTimer?.invalidate()
+        if let powerSourceRunLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), powerSourceRunLoopSource, .commonModes)
+        }
         sleepController.disable()
     }
 
@@ -193,8 +206,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 275, height: 112))
         let label = makeSectionLabel("Power Usage Settings")
         let unplugged = NSButton(checkboxWithTitle: "Turn off when unplugged", target: self, action: #selector(toggleDisableWhenUnplugged(_:)))
-        let autoDisable = NSButton(checkboxWithTitle: "Auto-disable below", target: self, action: #selector(toggleAutoDisableBelowThreshold(_:)))
-        let threshold = NSSegmentedControl(labels: ["10", "20", "30", "40", "50"], trackingMode: .selectOne, target: self, action: #selector(selectBatteryThreshold(_:)))
+        let autoDisable = NSButton(checkboxWithTitle: "Auto disable below", target: self, action: #selector(toggleAutoDisableBelowThreshold(_:)))
+        let threshold = NSSegmentedControl(labels: ["10%", "20%", "30%", "40%", "50%"], trackingMode: .selectOne, target: self, action: #selector(selectBatteryThreshold(_:)))
 
         for checkbox in [unplugged, autoDisable] {
             checkbox.font = .systemFont(ofSize: 13)
@@ -327,9 +340,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             self?.handleCountdownTick()
         }
+        RunLoop.main.add(timer, forMode: .common)
+        countdownTimer = timer
     }
 
     private func clearExpiration() {
@@ -353,10 +368,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let snapshot = batteryMonitor.snapshot()
         lastBatteryPowered = snapshot.isBatteryPowered
 
-        batteryTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
             self?.evaluateBatteryPolicy(allowUnplugTransitionDisable: true)
             self?.updateMenuState()
         }
+        RunLoop.main.add(timer, forMode: .common)
+        batteryTimer = timer
+
+        if let unmanagedSource = IOPSNotificationCreateRunLoopSource(
+            Self.powerSourceCallback,
+            Unmanaged.passUnretained(self).toOpaque()
+        ) {
+            let source = unmanagedSource.takeRetainedValue()
+            CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+            powerSourceRunLoopSource = source
+        }
+    }
+
+    private func handlePowerSourceChanged() {
+        evaluateBatteryPolicy(allowUnplugTransitionDisable: true)
+        updateMenuState()
     }
 
     private func evaluateBatteryPolicy(allowUnplugTransitionDisable: Bool) {
